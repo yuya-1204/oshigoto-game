@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>やさいファーム</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box;
+      -webkit-user-select:none; user-select:none;
+      -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+  html,body { height:100%; overflow:hidden;
+      font-family:"Hiragino Maru Gothic ProN","BIZ UDGothic","Yu Gothic",sans-serif; }
+  body { background:linear-gradient(#cfe8f7 0%, #e8f4d9 55%, #dfeecb); }
+
+  .screen { position:absolute; inset:0; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; padding:16px; }
+  .hidden { display:none !important; }
+
+  .bigbtn { font-family:inherit; border:none; cursor:pointer;
+      background:#4c9e5f; color:#fff; font-size:34px; font-weight:bold;
+      padding:24px 54px; border-radius:60px; box-shadow:0 8px 0 #35744a;
+      letter-spacing:3px; }
+  .bigbtn:active { transform:translateY(5px); box-shadow:0 3px 0 #35744a; }
+  .bigbtn.orange { background:#e8934a; box-shadow:0 8px 0 #c06f2d; }
+  .bigbtn.orange:active { box-shadow:0 3px 0 #c06f2d; }
+
+  /* ===== スタート ===== */
+  #scr-start { gap:20px; text-align:center; }
+  #scr-start h1 { font-size:48px; color:#3c6b2f; letter-spacing:4px; }
+  #scr-start .sun { font-size:72px; }
+  #veg-choice { display:flex; gap:14px; flex-wrap:wrap; justify-content:center;
+      max-width:700px; }
+  .veg-btn { font-family:inherit; border:3px solid #b6d3a0; cursor:pointer;
+      background:#fff; border-radius:20px; padding:12px 16px 8px;
+      box-shadow:0 5px 0 #a3c78e; display:flex; flex-direction:column;
+      align-items:center; min-width:110px; }
+  .veg-btn:active { transform:translateY(4px); box-shadow:0 1px 0 #a3c78e; }
+  .veg-btn .emo { font-size:56px; }
+  .veg-btn .name { font-size:19px; color:#3c6b2f; }
+  .veg-btn.locked { opacity:.45; }
+  .veg-btn.locked .name { color:#888; }
+  #choose-label { font-size:28px; color:#3c6b2f; }
+
+  /* ===== ゲーム ===== */
+  #scr-game { justify-content:flex-start; gap:10px; padding-top:10px; }
+  #topbar { width:100%; display:flex; align-items:center;
+      justify-content:space-between; }
+  #btn-break { font-family:inherit; border:none; background:#7fa7c9; color:#fff;
+      font-size:22px; padding:10px 22px; border-radius:40px;
+      box-shadow:0 4px 0 #5d84a6; cursor:pointer; }
+  #btn-gear { font-family:inherit; border:none; background:transparent;
+      font-size:22px; opacity:.35; padding:8px; cursor:pointer; }
+  #instruction { width:100%; max-width:760px; background:#fff;
+      border:3px solid #cfe0b8; border-radius:22px; padding:12px 64px 12px 22px;
+      position:relative; text-align:center; }
+  #inst-text { font-size:30px; color:#3c552a; line-height:1.35; }
+  #btn-listen { font-family:inherit; position:absolute; right:10px; top:50%;
+      transform:translateY(-50%); border:none; background:#eef4e2;
+      font-size:22px; border-radius:50%; width:48px; height:48px; cursor:pointer; }
+  #sun { font-size:64px; height:70px; line-height:70px; opacity:0; transition:opacity .5s; }
+  #sun.on { opacity:1; animation:shine 1.6s ease; }
+  @keyframes shine { 50% { transform:scale(1.3) rotate(20deg); } }
+
+  #field { display:grid; gap:16px; width:100%; max-width:700px;
+      grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); }
+  .plot { background:#a9744b; border-radius:24px; border:4px solid #8a5c38;
+      min-height:130px; display:flex; flex-direction:column; align-items:center;
+      justify-content:center; cursor:pointer; gap:4px; position:relative;
+      box-shadow:inset 0 6px 12px rgba(0,0,0,.18); }
+  .plot .grow { font-size:58px; line-height:1.1; transition:transform .3s; }
+  .plot.pop .grow { animation:pop .45s ease; }
+  @keyframes pop { 0%{transform:scale(.2);} 70%{transform:scale(1.25);} 100%{transform:scale(1);} }
+  .plot .dots { font-size:16px; letter-spacing:3px; color:#fff; min-height:20px; }
+  .wobble { animation:wobble .4s; }
+  @keyframes wobble { 25%{transform:translateX(-7px);} 75%{transform:translateX(7px);} }
+  .drop { position:absolute; font-size:34px; top:-10px; animation:dropfall .5s ease-in forwards;
+      pointer-events:none; }
+  @keyframes dropfall { to { transform:translateY(70px); opacity:0; } }
+
+  #workline { width:100%; max-width:700px; display:flex; align-items:center;
+      justify-content:space-around; min-height:120px; }
+  .station { display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .station .icon { font-size:70px; cursor:pointer; transition:transform .15s; }
+  .station .icon:active { transform:scale(.9); }
+  .station .label { font-size:22px; color:#3c552a; font-weight:bold;
+      background:#fff; border-radius:16px; padding:4px 14px; }
+  #btn-ship { display:none; animation:pulse 1s infinite; }
+  #btn-ship.show { display:block; }
+  @keyframes pulse { 50% { transform:scale(1.07); } }
+
+  .fly { position:fixed; font-size:52px; z-index:60; pointer-events:none;
+      margin-left:-26px; margin-top:-26px; transform:translate(0,0);
+      transition:transform .6s cubic-bezier(.5,-.2,.7,1), opacity .6s; }
+  #truck { position:fixed; bottom:24px; left:-220px; font-size:80px; z-index:70;
+      transition:left 2.2s ease-in-out; pointer-events:none; }
+  .heart { position:fixed; font-size:38px; z-index:60; pointer-events:none;
+      animation:floatup 1.5s ease-out forwards; }
+  @keyframes floatup { to { transform:translateY(-140px) scale(1.5); opacity:0; } }
+
+  /* ===== おわり ===== */
+  #scr-done { gap:18px; text-align:center; }
+  #scr-done h2 { font-size:42px; color:#3c6b2f; }
+  #done-town { font-size:46px; letter-spacing:6px; }
+  #done-msg { font-size:28px; color:#5c7a45; }
+  #unlock-box { background:#fff8dd; border:3px solid #ecd98a; border-radius:22px;
+      padding:14px 30px; font-size:30px; color:#8a6d1f; display:none; }
+  #unlock-box.show { display:block; animation:pop .5s ease; }
+  #zukan { display:flex; gap:10px; font-size:44px; background:#fff;
+      padding:10px 20px; border-radius:20px; border:3px solid #cfe0b8; }
+  #zukan .locked { opacity:.3; }
+  .btnrow { display:flex; gap:20px; flex-wrap:wrap; justify-content:center; }
+
+  /* ===== きゅうけい・スタッフ ===== */
+  #ov-break { position:absolute; inset:0; background:#dcebf5; z-index:80;
+      display:flex; flex-direction:column; align-items:center;
+      justify-content:center; gap:30px; text-align:center; }
+  #ov-break .zzz { font-size:90px; }
+  #ov-break p { font-size:36px; color:#456; }
+  #ov-staff { position:absolute; inset:0; background:rgba(40,40,40,.55);
+      z-index:90; display:flex; align-items:center; justify-content:center; }
+  #staff-panel { background:#fff; border-radius:18px; padding:24px;
+      width:min(560px,94vw); max-height:88vh; overflow-y:auto;
+      font-size:17px; color:#333; }
+  #staff-panel h3 { font-size:22px; margin-bottom:14px; }
+  .setrow { display:flex; justify-content:space-between; align-items:center;
+      padding:10px 0; border-bottom:1px solid #eee; gap:10px; }
+  .setrow select { font-size:17px; padding:6px 10px; }
+  #staff-panel table { width:100%; border-collapse:collapse; margin-top:8px;
+      font-size:14px; }
+  #staff-panel th, #staff-panel td { border:1px solid #ddd; padding:5px 8px;
+      text-align:center; }
+  .staffbtn { font-family:inherit; font-size:16px; padding:9px 18px;
+      border-radius:10px; border:1px solid #bbb; background:#f4f4f4;
+      cursor:pointer; margin-top:14px; }
+  .staffbtn.primary { background:#4c9e5f; color:#fff; border:none; }
+  .note { font-size:13px; color:#888; margin-top:10px; line-height:1.5; }
+</style>
+</head>
+<body>
+
+<!-- スタート -->
+<div id="scr-start" class="screen">
+  <div class="sun">☀️</div>
+  <h1>やさいファーム</h1>
+  <div id="choose-label">そだてる やさいを えらんでね</div>
+  <div id="veg-choice"></div>
+</div>
+
+<!-- ゲーム -->
+<div id="scr-game" class="screen hidden">
+  <div id="topbar">
+    <button id="btn-gear" title="スタッフ用（長おし）">⚙</button>
+    <div id="sun">☀️</div>
+    <button id="btn-break">☕ きゅうけい</button>
+  </div>
+  <div id="instruction">
+    <div id="inst-text"></div>
+    <button id="btn-listen" title="もういちど きく">🔊</button>
+  </div>
+  <div id="field"></div>
+  <div id="workline">
+    <div class="station" id="st-basket">
+      <div class="icon" id="basket">🧺</div>
+      <div class="label" id="basket-label">かご 0こ</div>
+    </div>
+    <div class="station" id="st-box">
+      <div class="icon" id="box">📦</div>
+      <div class="label" id="box-label">はこ 0こ</div>
+    </div>
+    <button class="bigbtn orange" id="btn-ship">🚚 しゅっか！</button>
+  </div>
+</div>
+
+<!-- おわり -->
+<div id="scr-done" class="screen hidden">
+  <h2>しゅっか できた！</h2>
+  <div id="done-town">🏘️ 👩👨👵 💛</div>
+  <div id="done-msg">まちの みんなに とどいたよ！</div>
+  <div id="unlock-box"></div>
+  <div id="zukan"></div>
+  <div class="btnrow">
+    <button class="bigbtn" id="btn-again">もういちど</button>
+    <button class="bigbtn orange" id="btn-close">おしまい</button>
+  </div>
+</div>
+
+<!-- トラック -->
+<div id="truck" class="hidden">🚚💨</div>
+
+<!-- きゅうけい -->
+<div id="ov-break" class="hidden">
+  <div class="zzz">☕</div>
+  <p>ゆっくり やすんでね</p>
+  <button class="bigbtn" id="btn-resume">もどる</button>
+</div>
+
+<!-- スタッフ -->
+<div id="ov-staff" class="hidden">
+  <div id="staff-panel">
+    <h3>スタッフ用メニュー</h3>
+    <div class="setrow"><span>はたけの数</span>
+      <select id="set-plots">
+        <option value="2">2つ</option><option value="4">4つ</option>
+        <option value="6">6つ</option>
+      </select></div>
+    <div class="setrow"><span>水やりの回数（1つの畑あたり）</span>
+      <select id="set-waters">
+        <option value="1">1回</option><option value="2">2回</option>
+        <option value="3">3回</option>
+      </select></div>
+    <div class="setrow"><span>効果音</span>
+      <select id="set-sound">
+        <option value="1">あり</option><option value="0">なし</option>
+      </select></div>
+    <div class="setrow"><span>音声読み上げ</span>
+      <select id="set-voice">
+        <option value="1">あり</option><option value="0">なし</option>
+      </select></div>
+    <h3 style="margin-top:18px;">記録（この端末のみ・匿名）</h3>
+    <table id="rec-table">
+      <thead><tr><th>日時</th><th>出荷数</th><th>タッチまちがい</th><th>所要時間</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="note">氏名などの個人情報は保存していません。出荷を重ねると新しい野菜が増える
+      「ずかん」機能で、継続して取り組む動機づけを狙っています。</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="staffbtn primary" id="btn-staff-close">閉じる</button>
+      <button class="staffbtn" id="btn-rec-clear">記録を消す</button>
+      <button class="staffbtn" id="btn-prog-reset">ずかんをリセット</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============ 設定・記録（端末内のみ、匿名） ============ */
+const DEF = { plots:4, waters:2, sound:1, voice:1 };
+function loadLS(key, fallback){
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch(e){ return fallback; }
+}
+function saveLS(key, val){
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){}
+}
+let S = Object.assign({}, DEF, loadLS("farm_settings", {}));
+let progress = Object.assign({ ship:0 }, loadLS("farm_progress", {}));
+let records = loadLS("farm_records", []);
+
+/* ============ 音 ============ */
+let actx = null;
+function audio(){ if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return actx; }
+function tone(freq, delay, dur, gain){
+  if(!S.sound) return; const c = audio(); if(!c) return;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = "sine"; o.frequency.value = freq;
+  o.connect(g); g.connect(c.destination);
+  const t = c.currentTime + delay;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(gain||0.12, t+0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+  o.start(t); o.stop(t+dur+0.05);
+}
+const sndTap   = () => { tone(660,0,.16); };
+const sndWater = () => { tone(880,0,.1,.08); tone(740,.08,.14,.08); };
+const sndGrow  = () => { tone(523,0,.15); tone(659,.12,.15); tone(784,.24,.25); };
+const sndBig   = () => { tone(523,0,.18); tone(659,.12,.18); tone(784,.24,.18); tone(1047,.36,.45,.14); };
+
+/* ============ 読み上げ ============ */
+function speak(text){
+  if(!S.voice) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "ja-JP"; u.rate = 0.85;
+    speechSynthesis.speak(u);
+  } catch(e){}
+}
+
+/* ============ データ ============ */
+/* 出荷2回ごとに次の野菜が「ずかん」に増える */
+const VEGS = [
+  { e:"🍅", n:"トマト" },       { e:"🥕", n:"にんじん" },
+  { e:"🌽", n:"とうもろこし" }, { e:"🍆", n:"なす" },
+  { e:"🍓", n:"いちご" },       { e:"🍉", n:"すいか" }
+];
+function unlockedCount(){
+  return Math.min(1 + Math.floor(progress.ship / 2), VEGS.length);
+}
+
+/* ============ 状態 ============ */
+let phase = "idle";   // plant / water / grow / harvest / pack / ship
+let veg = VEGS[0];
+let plots = [];       // { stage:'soil'|'seed'|'sprout'|'ripe'|'picked', water:0 }
+let basket = 0, boxed = 0;
+let session = null;   // { wrong, start }
+
+const $ = id => document.getElementById(id);
+function show(id){
+  ["scr-start","scr-game","scr-done"].forEach(s => $(s).classList.add("hidden"));
+  $(id).classList.remove("hidden");
+}
+
+/* ============ スタート画面 ============ */
+function renderStart(){
+  const wrap = $("veg-choice"); wrap.innerHTML = "";
+  const n = unlockedCount();
+  VEGS.forEach((v, i) => {
+    const b = document.createElement("button");
+    b.className = "veg-btn" + (i < n ? "" : " locked");
+    b.innerHTML = "<span class='emo'>" + (i < n ? v.e : "❓") + "</span>" +
+                  "<span class='name'>" + (i < n ? v.n : "おたのしみ") + "</span>";
+    if(i < n) b.addEventListener("click", () => { audio(); startSession(v); });
+    else b.addEventListener("click", () => speak("しゅっかすると ふえるよ。おたのしみに！"));
+    wrap.appendChild(b);
+  });
+  show("scr-start");
+}
+
+/* ============ セッション進行 ============ */
+function startSession(v){
+  veg = v;
+  session = { wrong:0, start:Date.now() };
+  plots = [];
+  for(let i=0;i<S.plots;i++) plots.push({ stage:"soil", water:0 });
+  basket = 0; boxed = 0;
+  $("basket-label").textContent = "かご 0こ";
+  $("box-label").textContent = "はこ 0こ";
+  $("btn-ship").classList.remove("show");
+  $("sun").classList.remove("on");
+  show("scr-game");
+  setPhase("plant");
+}
+function setPhase(p){
+  phase = p;
+  const msg = {
+    plant:   "はたけを タッチして たねを まこう",
+    water:   "はたけを タッチして みずを あげよう",
+    grow:    "おひさまの ちからで おおきく なるよ！",
+    harvest: veg.n + "を タッチして とろう",
+    pack:    "かごを タッチして はこに いれよう",
+    ship:    "しゅっか！を おしてね"
+  }[p];
+  $("inst-text").textContent = msg;
+  speak(msg);
+  renderField();
+  if(p === "grow"){
+    $("sun").classList.add("on");
+    sndGrow();
+    setTimeout(() => {
+      plots.forEach(pl => { if(pl.stage === "sprout") pl.stage = "ripe"; });
+      renderField(true);
+      sndBig();
+      setTimeout(() => setPhase("harvest"), 900);
+    }, 1600);
+  }
+  if(p === "ship") $("btn-ship").classList.add("show");
+}
+function plotEmoji(pl){
+  switch(pl.stage){
+    case "soil":   return "";
+    case "seed":   return "🌱";
+    case "sprout": return "🌿";
+    case "ripe":   return veg.e;
+    case "picked": return "";
+  }
+  return "";
+}
+function renderField(popAll){
+  const f = $("field"); f.innerHTML = "";
+  plots.forEach((pl, i) => {
+    const d = document.createElement("div");
+    d.className = "plot" + (popAll && pl.stage === "ripe" ? " pop" : "");
+    let dots = "";
+    if(phase === "water" && pl.stage !== "sprout"){
+      dots = "💧".repeat(pl.water) + "・".repeat(Math.max(0, S.waters - pl.water));
+    }
+    d.innerHTML = "<span class='grow'>" + plotEmoji(pl) + "</span>" +
+                  "<span class='dots'>" + dots + "</span>";
+    d.addEventListener("click", () => tapPlot(d, i));
+    f.appendChild(d);
+  });
+}
+function tapPlot(el, i){
+  const pl = plots[i];
+  if(phase === "grow" || phase === "shipping") return; // 演出中は無反応（誤タップ扱いにしない）
+  if(phase === "plant" && pl.stage === "soil"){
+    pl.stage = "seed"; sndTap();
+    el.classList.add("pop");
+    el.querySelector(".grow").textContent = "🌱";
+    if(plots.every(p => p.stage === "seed")) setTimeout(() => setPhase("water"), 500);
+    return;
+  }
+  if(phase === "water" && (pl.stage === "seed") && pl.water < S.waters){
+    pl.water++; sndWater();
+    const drop = document.createElement("div");
+    drop.className = "drop"; drop.textContent = "💧";
+    el.appendChild(drop);
+    setTimeout(() => drop.remove(), 550);
+    if(pl.water >= S.waters) pl.stage = "sprout";
+    setTimeout(() => {
+      renderField();
+      if(plots.every(p => p.stage === "sprout")) setTimeout(() => setPhase("grow"), 400);
+    }, 350);
+    return;
+  }
+  if(phase === "harvest" && pl.stage === "ripe"){
+    pl.stage = "picked"; basket++; sndTap();
+    fly(el, $("basket"), veg.e);
+    $("basket-label").textContent = "かご " + basket + "こ";
+    renderField();
+    if(plots.every(p => p.stage === "picked")) setTimeout(() => setPhase("pack"), 500);
+    return;
+  }
+  // 今のステップと違う畑タッチ → やさしく揺れるだけ
+  session.wrong++;
+  el.classList.remove("wobble"); void el.offsetWidth; el.classList.add("wobble");
+}
+$("basket").addEventListener("click", () => {
+  if(phase !== "pack"){
+    if(session){ session.wrong++; }
+    const b = $("st-basket");
+    b.classList.remove("wobble"); void b.offsetWidth; b.classList.add("wobble");
+    return;
+  }
+  if(basket > 0){
+    basket--; boxed++;
+    sndTap();
+    fly($("basket"), $("box"), veg.e);
+    $("basket-label").textContent = "かご " + basket + "こ";
+    $("box-label").textContent = "はこ " + boxed + "こ";
+    if(basket === 0){
+      sndGrow();
+      setTimeout(() => setPhase("ship"), 600);
+    }
+  }
+});
+$("btn-ship").addEventListener("click", () => {
+  if(phase !== "ship") return;
+  phase = "shipping";
+  $("btn-ship").classList.remove("show");
+  sndBig();
+  speak("しゅっか！ いってらっしゃい！");
+  const t = $("truck");
+  t.classList.remove("hidden");
+  t.style.left = "-220px";
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => { t.style.left = "110vw"; });
+  });
+  setTimeout(() => { t.classList.add("hidden"); endSession(); }, 2400);
+});
+
+/* ============ おわり ============ */
+function endSession(){
+  const before = unlockedCount();
+  progress.ship++;
+  saveLS("farm_progress", progress);
+  const after = unlockedCount();
+
+  const sec = Math.round((Date.now() - session.start)/1000);
+  records.push({ d:new Date().toLocaleString("ja-JP"), boxed, wrong:session.wrong, sec });
+  if(records.length > 50) records = records.slice(-50);
+  saveLS("farm_records", records);
+
+  $("done-town").textContent = "🏘️ 👩👨👵 💛";
+  const ub = $("unlock-box");
+  if(after > before){
+    const nv = VEGS[after-1];
+    ub.textContent = "あたらしい やさい！ " + nv.e + " " + nv.n;
+    ub.classList.add("show");
+    $("done-msg").textContent = "まちの みんなに とどいたよ！";
+    speak("あたらしい やさい、" + nv.n + "が ふえたよ！");
+  } else {
+    ub.classList.remove("show");
+    const need = 2 - (progress.ship % 2);
+    ub.textContent = "";
+    speak("まちの みんなに とどいたよ！ ありがとう！");
+    if(after < VEGS.length){
+      $("done-msg").textContent =
+        "まちの みんなに とどいたよ！ あと " + need + "かい しゅっかすると あたらしい やさいが ふえるよ";
+    } else {
+      $("done-msg").textContent = "まちの みんなに とどいたよ！";
+    }
+  }
+  const z = $("zukan"); z.innerHTML = "";
+  VEGS.forEach((v, i) => {
+    const s = document.createElement("span");
+    if(i < after){ s.textContent = v.e; }
+    else { s.textContent = "❓"; s.className = "locked"; }
+    z.appendChild(s);
+  });
+  show("scr-done");
+  hearts($("done-town"));
+}
+
+/* ============ 演出 ============ */
+function fly(fromEl, toEl, ch){
+  const r1 = fromEl.getBoundingClientRect(), r2 = toEl.getBoundingClientRect();
+  const el = document.createElement("div");
+  el.className = "fly"; el.textContent = ch;
+  el.style.left = (r1.left + r1.width/2) + "px";
+  el.style.top  = (r1.top + r1.height/2) + "px";
+  document.body.appendChild(el);
+  requestAnimationFrame(() => {
+    const dx = (r2.left + r2.width/2) - (r1.left + r1.width/2);
+    const dy = (r2.top + r2.height/2) - (r1.top + r1.height/2);
+    el.style.transform = "translate(" + dx + "px," + dy + "px) scale(.4)";
+    el.style.opacity = ".7";
+  });
+  setTimeout(() => el.remove(), 700);
+}
+function hearts(overEl){
+  const r = overEl.getBoundingClientRect();
+  for(let i=0;i<6;i++){
+    const h = document.createElement("div");
+    h.className = "heart"; h.textContent = "💛";
+    h.style.left = (r.left + Math.random()*r.width) + "px";
+    h.style.top  = (r.top + 5) + "px";
+    h.style.animationDelay = (i*0.13) + "s";
+    document.body.appendChild(h);
+    setTimeout(() => h.remove(), 2000);
+  }
+}
+
+/* ============ スタッフ画面 ============ */
+function openStaff(){
+  $("set-plots").value  = String(S.plots);
+  $("set-waters").value = String(S.waters);
+  $("set-sound").value  = String(S.sound);
+  $("set-voice").value  = String(S.voice);
+  const tb = $("rec-table").querySelector("tbody");
+  tb.innerHTML = "";
+  records.slice(-10).reverse().forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = "<td>"+r.d+"</td><td>"+r.boxed+"こ</td><td>"+r.wrong+"回</td><td>"+r.sec+"秒</td>";
+    tb.appendChild(tr);
+  });
+  $("ov-staff").classList.remove("hidden");
+}
+function closeStaff(){
+  S.plots  = parseInt($("set-plots").value, 10);
+  S.waters = parseInt($("set-waters").value, 10);
+  S.sound  = parseInt($("set-sound").value, 10);
+  S.voice  = parseInt($("set-voice").value, 10);
+  saveLS("farm_settings", S);
+  $("ov-staff").classList.add("hidden");
+}
+
+/* ============ イベント ============ */
+$("btn-listen").addEventListener("click", () => {
+  const t = $("inst-text").textContent;
+  if(t) speak(t);
+});
+$("btn-again").addEventListener("click", renderStart);
+$("btn-close").addEventListener("click", renderStart);
+$("btn-break").addEventListener("click", () => $("ov-break").classList.remove("hidden"));
+$("btn-resume").addEventListener("click", () => $("ov-break").classList.add("hidden"));
+$("btn-staff-close").addEventListener("click", closeStaff);
+$("btn-rec-clear").addEventListener("click", () => {
+  records = []; saveLS("farm_records", records); openStaff();
+});
+$("btn-prog-reset").addEventListener("click", () => {
+  progress = { ship:0 }; saveLS("farm_progress", progress); openStaff();
+});
+let gearTimer = null;
+$("btn-gear").addEventListener("pointerdown", () => {
+  gearTimer = setTimeout(openStaff, 1200);
+});
+["pointerup","pointerleave","pointercancel"].forEach(ev =>
+  $("btn-gear").addEventListener(ev, () => clearTimeout(gearTimer)));
+
+renderStart();
+</script>
+</body>
+</html>
