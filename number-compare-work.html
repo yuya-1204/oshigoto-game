@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#edf8f1">
+  <title>数字くらべ練習｜おしごと練習</title>
+  <link rel="stylesheet" href="ai-ready-practice.css">
+</head>
+<body>
+<main class="app">
+  <div class="topbar">
+    <a class="back-link" href="https://yamayu-sangyoui-oyama.localinfo.jp/pages/9891792/page_202607192003">← ネコゲームへ</a>
+    <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="true">効果音：オン</button>
+  </div>
+  <header class="hero">
+    <p class="eyebrow">60秒｜おしごと練習</p>
+    <h1>数字くらべ練習</h1>
+    <p class="lead">表示された指示に合わせて、左右の「大きい方」または「小さい方」を選びます。正解が増えると四則演算へ進みます。</p>
+    <p class="notice">1日3回までです。暗算の速さや正解数は、就労能力や復職可否を示すものではありません。疲れたときは中断してください。</p>
+  </header>
+  <section class="panel">
+    <div class="status-grid" aria-live="polite">
+      <div class="status-box"><span>残り時間</span><strong id="time">60秒</strong></div>
+      <div class="status-box"><span>正解</span><strong id="correct">0回</strong></div>
+      <div class="status-box"><span>ミス</span><strong id="misses">0 / 3</strong></div>
+      <div class="status-box"><span>今日の最高</span><strong id="best">0回</strong></div>
+    </div>
+    <p class="number-prompt" id="prompt">開始すると、選ぶ方がここに表示されます</p>
+    <div class="number-choices">
+      <button class="number-choice" id="leftChoice" type="button" disabled>—</button>
+      <button class="number-choice" id="rightChoice" type="button" disabled>—</button>
+    </div>
+    <p class="feedback" id="feedback" role="status" aria-live="polite">60秒経過、または3回ミスで終了します。</p>
+    <div class="actions">
+      <button class="primary" id="startButton" type="button">練習を開始</button>
+      <span><strong id="attempts">今日 0 / 3回</strong></span>
+    </div>
+  </section>
+  <p class="footnote">割り算は割り切れる問題だけが出ます。開始した時点で1回と数え、その日の最高成績だけをこの端末内に保存します。記録は外部送信されません。</p>
+</main>
+<script src="number-compare-work.js"></script>
+</body>
+</html>
